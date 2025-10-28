@@ -27,7 +27,6 @@ const grpcDocURL = "https://grpc.io/docs/languages/go/quickstart/#regenerate-grp
 func main() {
 	if len(os.Args) == 2 && os.Args[1] == "--version" {
 		fmt.Fprintf(os.Stdout, "%v %v\n", filepath.Base(os.Args[0]), version.String())
-		
 		os.Exit(0)
 	}
 	if len(os.Args) == 2 && os.Args[1] == "--help" {

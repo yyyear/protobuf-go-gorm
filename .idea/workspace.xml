@@ -6,6 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="4ec1475b-3685-450c-a108-3ede41353dbc" name="Changes" comment="转到 win 前提交">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/protoc-gen-go" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
