@@ -15,7 +15,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	
+
 	gengo "google.golang.org/protobuf/cmd/protoc-gen-go/internal_gengo"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/internal/version"
@@ -33,7 +33,7 @@ func main() {
 		fmt.Fprintf(os.Stdout, "See "+genGoDocURL+" for usage information.\n")
 		os.Exit(0)
 	}
-	
+
 	var (
 		flags                                 flag.FlagSet
 		plugins                               = flags.String("plugins", "", "deprecated option")
