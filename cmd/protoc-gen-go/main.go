@@ -15,7 +15,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-
+	
 	gengo "google.golang.org/protobuf/cmd/protoc-gen-go/internal_gengo"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/internal/version"
@@ -27,13 +27,14 @@ const grpcDocURL = "https://grpc.io/docs/languages/go/quickstart/#regenerate-grp
 func main() {
 	if len(os.Args) == 2 && os.Args[1] == "--version" {
 		fmt.Fprintf(os.Stdout, "%v %v\n", filepath.Base(os.Args[0]), version.String())
+		
 		os.Exit(0)
 	}
 	if len(os.Args) == 2 && os.Args[1] == "--help" {
 		fmt.Fprintf(os.Stdout, "See "+genGoDocURL+" for usage information.\n")
 		os.Exit(0)
 	}
-
+	
 	var (
 		flags                                 flag.FlagSet
 		plugins                               = flags.String("plugins", "", "deprecated option")

@@ -6,54 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="4ec1475b-3685-450c-a108-3ede41353dbc" name="Changes" comment="转到 win 前提交">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/annotation_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/annotation_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/internal_gengo/init.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/internal_gengo/init.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/internal_gengo/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/internal_gengo/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/internal_gengo/reflect.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/internal_gengo/reflect.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/internal_gengo/well_known_types.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/internal_gengo/well_known_types.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/annotations/annotations.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/annotations/annotations.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/annotations/annotations.pb.go.meta" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/annotations/annotations.pb.go.meta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/annotations/annotations.proto" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/annotations/annotations.proto" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/comments/comments.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/comments/comments.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/comments/deprecated.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/comments/deprecated.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/extensions/base/base.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/extensions/base/base.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/extensions/ext/ext.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/extensions/ext/ext.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/extensions/extra/extra.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/extensions/extra/extra.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/extensions/proto3/ext3.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/extensions/proto3/ext3.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/fieldnames/fieldnames.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/fieldnames/fieldnames.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/gen_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/gen_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/import_public/a.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/import_public/a.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/import_public/b.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/import_public/b.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/import_public/c.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/import_public/c.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/import_public/sub/a.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/import_public/sub/a.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/import_public/sub/b.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/import_public/sub/b.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/import_public/sub2/a.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/import_public/sub2/a.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/fmt/m.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/fmt/m.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_a_1/m1.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_a_1/m1.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_a_1/m2.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_a_1/m2.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_a_2/m3.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_a_2/m3.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_a_2/m4.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_a_2/m4.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_b_1/m1.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_b_1/m1.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_b_1/m2.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_b_1/m2.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_import_a1m1.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_import_a1m1.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_import_a1m2.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_import_a1m2.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_import_all.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_import_all.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/issue780_oneof_conflict/test.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/issue780_oneof_conflict/test.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/nopackage/nopackage.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/nopackage/nopackage.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/proto2/enum.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/proto2/enum.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/proto2/fields.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/proto2/fields.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/proto2/nested_messages.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/proto2/nested_messages.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/proto2/proto2.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/proto2/proto2.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/proto3/enum.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/proto3/enum.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/proto3/fields.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/proto3/fields.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/protoeditions/enum.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/protoeditions/enum.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/protoeditions/fields.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/protoeditions/fields.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/protoeditions/legacy_enum.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/protoeditions/legacy_enum.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/protoeditions/maps_and_delimited.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/protoeditions/maps_and_delimited.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/protoeditions/nested_messages.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/protoeditions/nested_messages.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/retention/options_message.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/retention/options_message.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/retention/retention.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/retention/retention.pb.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
