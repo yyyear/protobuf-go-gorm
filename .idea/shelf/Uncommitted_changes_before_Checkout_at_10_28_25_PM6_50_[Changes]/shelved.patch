@@ -1,0 +1,530 @@
+Index: cmd/protoc-gen-go/internal_gengo/opaque.go
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>// Copyright 2024 The Go Authors. All rights reserved.\n// Use of this source code is governed by a BSD-style\n// license that can be found in the LICENSE file.\n\npackage internal_gengo\n\nimport (\n\t\"fmt\"\n\t\"strings\"\n\t\"unicode\"\n\t\"unicode/utf8\"\n\n\t\"google.golang.org/protobuf/compiler/protogen\"\n\t\"google.golang.org/protobuf/internal/filedesc\"\n\t\"google.golang.org/protobuf/internal/genid\"\n\t\"google.golang.org/protobuf/reflect/protoreflect\"\n\n\t\"google.golang.org/protobuf/types/descriptorpb\"\n)\n\nfunc opaqueGenMessageHook(g *protogen.GeneratedFile, f *fileInfo, message *messageInfo) bool {\n\topaqueGenMessage(g, f, message)\n\treturn true\n}\n\nfunc opaqueGenMessage(g *protogen.GeneratedFile, f *fileInfo, message *messageInfo) {\n\t// Message type declaration.\n\tg.AnnotateSymbol(message.GoIdent.GoName, protogen.Annotation{Location: message.Location})\n\tleadingComments := appendDeprecationSuffix(message.Comments.Leading,\n\t\tmessage.Desc.ParentFile(),\n\t\tmessage.Desc.Options().(*descriptorpb.MessageOptions).GetDeprecated())\n\tg.P(leadingComments,\n\t\t\"type \", message.GoIdent, \" struct {\")\n\n\tsf := f.allMessageFieldsByPtr[message]\n\tif sf == nil {\n\t\tsf = new(structFields)\n\t\tf.allMessageFieldsByPtr[message] = sf\n\t}\n\n\tvar tags structTags\n\tswitch {\n\tcase message.isOpen():\n\t\ttags = structTags{{\"protogen\", \"open.v1\"}}\n\tcase message.isHybrid():\n\t\ttags = structTags{{\"protogen\", \"hybrid.v1\"}}\n\tcase message.isOpaque():\n\t\ttags = structTags{{\"protogen\", \"opaque.v1\"}}\n\t}\n\n\tg.P(genid.State_goname, \" \", protoimplPackage.Ident(\"MessageState\"), tags)\n\tsf.append(genid.State_goname)\n\tfields := message.Fields\n\tfor _, field := range fields {\n\t\topaqueGenMessageField(g, f, message, field, sf)\n\t}\n\topaqueGenMessageInternalFields(g, f, message, sf)\n\tg.P(\"}\")\n\tg.P()\n\n\tgenMessageKnownFunctions(g, f, message)\n\tgenMessageDefaultDecls(g, f, message)\n\topaqueGenMessageMethods(g, f, message)\n\topaqueGenMessageBuilder(g, f, message)\n\topaqueGenOneofWrapperTypes(g, f, message)\n}\n\n// opaqueGenMessageField generates a struct field.\nfunc opaqueGenMessageField(g *protogen.GeneratedFile, f *fileInfo, message *messageInfo, field *protogen.Field, sf *structFields) {\n\tif oneof := field.Oneof; oneof != nil && !oneof.Desc.IsSynthetic() {\n\t\t// It would be a bit simpler to iterate over the oneofs below,\n\t\t// but generating the field here keeps the contents of the Go\n\t\t// struct in the same order as the contents of the source\n\t\t// .proto file.\n\t\tif field != oneof.Fields[0] {\n\t\t\treturn\n\t\t}\n\t\topaqueGenOneofFields(g, f, message, oneof, sf)\n\t\treturn\n\t}\n\n\tgoType, pointer := opaqueFieldGoType(g, f, message, field)\n\tif pointer {\n\t\tgoType = \"*\" + goType\n\t}\n\tprotobufTagValue := fieldProtobufTagValue(field)\n\tjsonTagValue := fieldJSONTagValue(field)\n\tif g.InternalStripForEditionsDiff() {\n\t\tif field.Desc.ContainingOneof() != nil && field.Desc.ContainingOneof().IsSynthetic() {\n\t\t\tprotobufTagValue = strings.ReplaceAll(protobufTagValue, \",oneof\", \"\")\n\t\t}\n\t\tprotobufTagValue = strings.ReplaceAll(protobufTagValue, \",proto3\", \"\")\n\t}\n\ttags := structTags{\n\t\t{\"protobuf\", protobufTagValue},\n\t}\n\tif !message.isOpaque() {\n\t\ttags = append(tags, structTags{{\"json\", jsonTagValue}}...)\n\t}\n\tif field.Desc.IsMap() {\n\t\tkeyTagValue := fieldProtobufTagValue(field.Message.Fields[0])\n\t\tvalTagValue := fieldProtobufTagValue(field.Message.Fields[1])\n\t\tkeyTagValue = strings.ReplaceAll(keyTagValue, \",proto3\", \"\")\n\t\tvalTagValue = strings.ReplaceAll(valTagValue, \",proto3\", \"\")\n\t\ttags = append(tags, structTags{\n\t\t\t{\"protobuf_key\", keyTagValue},\n\t\t\t{\"protobuf_val\", valTagValue},\n\t\t}...)\n\t}\n\n\tname := field.GoName\n\tif message.isOpaque() {\n\t\tname = \"xxx_hidden_\" + name\n\t}\n\n\tif message.isOpaque() {\n\t\tg.P(name, \" \", goType, tags)\n\t\tsf.append(name)\n\t\tif message.isTracked {\n\t\t\tg.P(\"// Deprecated: Do not use. This will be deleted in the near future.\")\n\t\t\tg.P(\"XXX_ft_\", field.GoName, \" struct{} `go:\\\"track\\\"`\")\n\t\t\tsf.append(\"XXX_ft_\" + field.GoName)\n\t\t}\n\t} else {\n\t\tif message.isTracked {\n\t\t\ttags = append(tags, structTags{\n\t\t\t\t{\"go\", \"track\"},\n\t\t\t}...)\n\t\t}\n\t\tg.AnnotateSymbol(field.Parent.GoIdent.GoName+\".\"+name, protogen.Annotation{Location: field.Location})\n\t\tleadingComments := appendDeprecationSuffix(field.Comments.Leading,\n\t\t\tfield.Desc.ParentFile(),\n\t\t\tfield.Desc.Options().(*descriptorpb.FieldOptions).GetDeprecated())\n\t\tg.P(leadingComments,\n\t\t\tname, \" \", goType, tags,\n\t\t\ttrailingComment(field.Comments.Trailing))\n\t\tsf.append(name)\n\t}\n}\n\n// opaqueGenOneofFields generates the message fields for a oneof.\nfunc opaqueGenOneofFields(g *protogen.GeneratedFile, f *fileInfo, message *messageInfo, oneof *protogen.Oneof, sf *structFields) {\n\ttags := structTags{\n\t\t{\"protobuf_oneof\", string(oneof.Desc.Name())},\n\t}\n\tif message.isTracked {\n\t\ttags = append(tags, structTags{\n\t\t\t{\"go\", \"track\"},\n\t\t}...)\n\t}\n\n\toneofName := opaqueOneofFieldName(oneof, message.isOpaque())\n\tgoType := opaqueOneofInterfaceName(oneof)\n\n\tif message.isOpaque() {\n\t\tg.P(oneofName, \" \", goType, tags)\n\t\tsf.append(oneofName)\n\t\tif message.isTracked {\n\t\t\tg.P(\"// Deprecated: Do not use. This will be deleted in the near future.\")\n\t\t\tg.P(\"XXX_ft_\", oneof.GoName, \" struct{} `go:\\\"track\\\"`\")\n\t\t\tsf.append(\"XXX_ft_\" + oneof.GoName)\n\t\t}\n\t\treturn\n\t}\n\n\tleadingComments := oneof.Comments.Leading\n\tif leadingComments != \"\" {\n\t\tleadingComments += \"\\n\"\n\t}\n\t// NOTE(rsc): The extra \\n here is working around #52605,\n\t// making the comment be in Go 1.19 doc comment format\n\t// even though it's not really a doc comment.\n\tss := []string{\" Types that are valid to be assigned to \", oneofName, \":\\n\\n\"}\n\tfor _, field := range oneof.Fields {\n\t\tss = append(ss, \"\\t*\"+opaqueFieldOneofType(field, message.isOpaque()).GoName+\"\\n\")\n\t}\n\tleadingComments += protogen.Comments(strings.Join(ss, \"\"))\n\tg.P(leadingComments, oneofName, \" \", goType, tags)\n\tsf.append(oneofName)\n}\n\n// opaqueGenMessageInternalFields adds additional XXX_ fields to a message struct.\nfunc opaqueGenMessageInternalFields(g *protogen.GeneratedFile, f *fileInfo, message *messageInfo, sf *structFields) {\n\tif opaqueNeedsPresenceArray(message) {\n\t\tif opaqueNeedsLazyStruct(message) {\n\t\t\tg.P(\"// Deprecated: Do not use. This will be deleted in the near future.\")\n\t\t\tg.P(\"XXX_lazyUnmarshalInfo \", protoimplPackage.Ident(\"LazyUnmarshalInfo\"))\n\t\t\tsf.append(\"XXX_lazyUnmarshalInfo\")\n\t\t}\n\t\tg.P(\"XXX_raceDetectHookData \", protoimplPackage.Ident(\"RaceDetectHookData\"))\n\t\tsf.append(\"XXX_raceDetectHookData\")\n\n\t\t// Presence must be stored in a data type no larger than 32 bit:\n\t\t//\n\t\t// Presence used to be a uint64, accessed with atomic.LoadUint64, but it\n\t\t// turns out that on 32-bit platforms like GOARCH=arm, the struct field\n\t\t// was 32-bit aligned (not 64-bit aligned) and hence atomic accesses\n\t\t// failed.\n\t\t//\n\t\t// The easiest solution was to switch to a uint32 on all platforms,\n\t\t// which did not come with a performance penalty.\n\t\tg.P(\"XXX_presence [\", (opaqueNumPresenceFields(message)+31)/32, \"]uint32\")\n\t\tsf.append(\"XXX_presence\")\n\t}\n\tif message.Desc.ExtensionRanges().Len() > 0 {\n\t\tg.P(genid.ExtensionFields_goname, \" \", protoimplPackage.Ident(\"ExtensionFields\"))\n\t\tsf.append(genid.ExtensionFields_goname)\n\t}\n\tg.P(genid.UnknownFields_goname, \" \", protoimplPackage.Ident(\"UnknownFields\"))\n\tsf.append(genid.UnknownFields_goname)\n\tg.P(genid.SizeCache_goname, \" \", protoimplPackage.Ident(\"SizeCache\"))\n\tsf.append(genid.SizeCache_goname)\n}\n\nfunc opaqueGenMessageMethods(g *protogen.GeneratedFile, f *fileInfo, message *messageInfo) {\n\tgenMessageBaseMethods(g, f, message)\n\n\tisRepeated := func(field *protogen.Field) bool {\n\t\treturn field.Desc.Cardinality() == protoreflect.Repeated\n\t}\n\n\tfor _, field := range message.Fields {\n\t\tif isFirstOneofField(field) && !message.isOpaque() {\n\t\t\topaqueGenGetOneof(g, f, message, field.Oneof)\n\t\t}\n\t\topaqueGenGet(g, f, message, field)\n\t}\n\tfor _, field := range message.Fields {\n\t\t// For the plain open mode, we do not have setters.\n\t\tif message.isOpen() {\n\t\t\tcontinue\n\t\t}\n\t\topaqueGenSet(g, f, message, field)\n\t}\n\tfor _, field := range message.Fields {\n\t\t// Open API does not have Has method.\n\t\t// Repeated (includes map) fields do not have Has method.\n\t\tif message.isOpen() || isRepeated(field) {\n\t\t\tcontinue\n\t\t}\n\n\t\tif !field.Desc.HasPresence() {\n\t\t\tcontinue\n\t\t}\n\n\t\tif isFirstOneofField(field) {\n\t\t\topaqueGenHasOneof(g, f, message, field.Oneof)\n\t\t}\n\t\topaqueGenHas(g, f, message, field)\n\t}\n\tfor _, field := range message.Fields {\n\t\t// Open API does not have Clear method.\n\t\t// Repeated (includes map) fields do not have Clear method.\n\t\tif message.isOpen() || isRepeated(field) {\n\t\t\tcontinue\n\t\t}\n\t\tif !field.Desc.HasPresence() {\n\t\t\tcontinue\n\t\t}\n\n\t\tif isFirstOneofField(field) {\n\t\t\topaqueGenClearOneof(g, f, message, field.Oneof)\n\t\t}\n\t\topaqueGenClear(g, f, message, field)\n\t}\n\t// Plain open protos do not have which methods.\n\tif !message.isOpen() {\n\t\topaqueGenWhichOneof(g, f, message)\n\t}\n\n\tif g.InternalStripForEditionsDiff() {\n\t\treturn\n\t}\n}\n\nfunc isLazy(field *protogen.Field) bool {\n\t// Prerequisite: field is of kind message\n\tif field.Message == nil {\n\t\treturn false\n\t}\n\n\t// Was the field marked as [lazy = true] in the .proto file?\n\treturn field.Desc.(interface{ IsLazy() bool }).IsLazy()\n}\n\n// opaqueGenGet generates a Get method for a field.\nfunc opaqueGenGet(g *protogen.GeneratedFile, f *fileInfo, message *messageInfo, field *protogen.Field) {\n\tgoType, pointer := opaqueFieldGoType(g, f, message, field)\n\tgetterName, bcName := field.MethodName(\"Get\")\n\n\t// If we need a backwards compatible getter name, we add it now.\n\tif bcName != \"\" {\n\t\tdefer func() {\n\t\t\tg.P(\"// Deprecated: Use \", getterName, \" instead.\")\n\t\t\tg.P(\"func (x *\", message.GoIdent, \") \", bcName, \"() \", goType, \" {\")\n\t\t\tg.P(\"return x.\", getterName, \"()\")\n\t\t\tg.P(\"}\")\n\t\t\tg.P()\n\t\t}()\n\t}\n\n\tleadingComments := appendDeprecationSuffix(\"\",\n\t\tfield.Desc.ParentFile(),\n\t\tfield.Desc.Options().(*descriptorpb.FieldOptions).GetDeprecated())\n\tfieldtrackNoInterface(g, message.isTracked)\n\tg.AnnotateSymbol(message.GoIdent.GoName+\".\"+getterName, protogen.Annotation{Location: field.Location})\n\n\tdefaultValue := fieldDefaultValue(g, f, message, field)\n\n\t// Oneof field.\n\tif oneof := field.Oneof; oneof != nil && !oneof.Desc.IsSynthetic() {\n\t\tstructPtr := \"x\"\n\t\tg.P(leadingComments, \"func (x *\", message.GoIdent, \") \", getterName, \"() \", goType, \" {\")\n\t\tg.P(\"if x != nil {\")\n\t\tif message.isOpaque() && message.isTracked {\n\t\t\tg.P(\"_ = \", structPtr, \".XXX_ft_\", field.Oneof.GoName)\n\t\t}\n\t\tg.P(\"if x, ok := \", structPtr, \".\", opaqueOneofFieldName(oneof, message.isOpaque()), \".(*\", opaqueFieldOneofType(field, message.isOpaque()), \"); ok {\")\n\t\tg.P(\"return x.\", field.GoName)\n\t\tg.P(\"}\")\n\t\t// End if m != nil {.\n\t\tg.P(\"}\")\n\t\tg.P(\"return \", defaultValue)\n\t\tg.P(\"}\")\n\t\tg.P()\n\t\treturn\n\t}\n\n\t// Non-oneof field for open type message.\n\tif !message.isOpaque() {\n\t\tg.P(leadingComments, \"func (x *\", message.GoIdent, \") \", getterName, \"() \", goType, \" {\")\n\t\tif !field.Desc.HasPresence() || defaultValue == \"nil\" {\n\t\t\tg.P(\"if x != nil {\")\n\t\t} else {\n\t\t\tg.P(\"if x != nil && x.\", field.GoName, \" != nil {\")\n\t\t}\n\t\tstar := \"\"\n\t\tif pointer {\n\t\t\tstar = \"*\"\n\t\t}\n\t\tg.P(\"return \", star, \" x.\", field.GoName)\n\t\tg.P(\"}\")\n\t\tg.P(\"return \", defaultValue)\n\t\tg.P(\"}\")\n\t\tg.P()\n\t\treturn\n\t}\n\n\t// Non-oneof field for opaque type message.\n\tg.P(leadingComments, \"func (x *\", message.GoIdent, \") \", getterName, \"() \", goType, \"{\")\n\tstructPtr := \"x\"\n\tg.P(\"if x != nil {\")\n\tif message.isTracked {\n\t\tg.P(\"_ = \", structPtr, \".XXX_ft_\", field.GoName)\n\t}\n\tif usePresence(message, field) {\n\t\tpi := opaqueFieldPresenceIndex(field)\n\t\tai := pi / 32\n\t\t// For\n\t\t//\n\t\t//  1. Message fields of lazy messages (unmarshalled lazily),\n\t\t//  2. Fields with a default value,\n\t\t//  3. Closed enums\n\t\t//\n\t\t// ...we check presence, but for other fields using presence, we can return\n\t\t// whatever is there and it should be correct regardless of presence, which\n\t\t// saves us an atomic operation.\n\t\tisEnum := field.Desc.Kind() == protoreflect.EnumKind\n\t\tusePresenceForRead := (isLazy(field)) ||\n\t\t\tfield.Desc.HasDefault() || isEnum\n\n\t\tif usePresenceForRead {\n\t\t\tg.P(\"if \", protoimplPackage.Ident(\"X\"), \".Present(&(\", structPtr, \".XXX_presence[\", ai, \"]),\", pi, \") {\")\n\t\t}\n\t\t// For lazy, check if pointer is nil and optionally unmarshal\n\t\tif isLazy(field) {\n\t\t\t// Since pointer to lazily unmarshaled sub-message can be written during a conceptual\n\t\t\t// \"read\" operation, all read/write accesses to the pointer must be atomic.  This\n\t\t\t// function gets inlined on x86 as just a simple get and compare. Still need to make the\n\t\t\t// slice accesses be atomic.\n\t\t\tg.P(\"if \", protoimplPackage.Ident(\"X\"), \".AtomicCheckPointerIsNil(&\", structPtr, \".xxx_hidden_\", field.GoName, \") {\")\n\t\t\tg.P(protoimplPackage.Ident(\"X\"), \".UnmarshalField(\", structPtr, \", \", field.Desc.Number(), \")\")\n\t\t\tg.P(\"}\")\n\t\t}\n\t\tif field.Message == nil || field.Desc.IsMap() {\n\t\t\tstar := \"\"\n\t\t\tif pointer {\n\t\t\t\tstar = \"*\"\n\t\t\t}\n\t\t\tif pointer {\n\t\t\t\tg.P(\"if \", structPtr, \".xxx_hidden_\", field.GoName, \"!= nil {\")\n\t\t\t}\n\n\t\t\tg.P(\"return \", star, structPtr, \".xxx_hidden_\", field.GoName)\n\t\t\tif pointer {\n\t\t\t\tg.P(\"}\")\n\t\t\t\tg.P(\"return \", defaultValue)\n\t\t\t}\n\t\t} else {\n\t\t\t// We need to do an atomic load of the msg pointer field, but cannot explicitly use\n\t\t\t// unsafe pointers here.  We load the value and store into rv, via protoimpl.Pointer,\n\t\t\t// which is aliased to unsafe.Pointer in pointer_unsafe.go, but is aliased to\n\t\t\t// interface{} in pointer_reflect.go\n\t\t\tstar := \"\"\n\t\t\tif pointer {\n\t\t\t\tstar = \"*\"\n\t\t\t}\n\t\t\tif isLazy(field) {\n\t\t\t\tg.P(\"var rv \", star, goType)\n\t\t\t\tg.P(protoimplPackage.Ident(\"X\"), \".AtomicLoadPointer(\", protoimplPackage.Ident(\"Pointer\"), \"(&\", structPtr, \".xxx_hidden_\", field.GoName, \"), \", protoimplPackage.Ident(\"Pointer\"), \"(&rv))\")\n\t\t\t\tg.P(\"return \", star, \"rv\")\n\t\t\t} else {\n\t\t\t\tif pointer {\n\t\t\t\t\tg.P(\"if \", structPtr, \".xxx_hidden_\", field.GoName, \"!= nil {\")\n\t\t\t\t}\n\t\t\t\tg.P(\"return \", star, structPtr, \".xxx_hidden_\", field.GoName)\n\t\t\t\tif pointer {\n\t\t\t\t\tg.P(\"}\")\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\tif usePresenceForRead {\n\t\t\tg.P(\"}\")\n\t\t}\n\t} else if pointer {\n\t\tg.P(\"if \", structPtr, \".xxx_hidden_\", field.GoName, \" != nil {\")\n\t\tg.P(\"return *\", structPtr, \".xxx_hidden_\", field.GoName)\n\t\tg.P(\"}\")\n\t} else {\n\t\tg.P(\"return \", structPtr, \".xxx_hidden_\", field.GoName)\n\t}\n\t// End if m != nil {.\n\tg.P(\"}\")\n\tg.P(\"return \", defaultValue)\n\tg.P(\"}\")\n\tg.P()\n}\n\n// opaqueGenSet generates a Set method for a field.\nfunc opaqueGenSet(g *protogen.GeneratedFile, f *fileInfo, message *messageInfo, field *protogen.Field) {\n\tgoType, pointer := opaqueFieldGoType(g, f, message, field)\n\tsetterName, bcName := field.MethodName(\"Set\")\n\n\t// If we need a backwards compatible setter name, we add it now.\n\tif bcName != \"\" {\n\t\tdefer func() {\n\t\t\tg.P(\"// Deprecated: Use \", setterName, \" instead.\")\n\t\t\tg.P(\"func (x *\", message.GoIdent, \") \", bcName, \"(v \", goType, \") {\")\n\t\t\tg.P(\"x.\", setterName, \"(v)\")\n\t\t\tg.P(\"}\")\n\t\t\tg.P()\n\t\t}()\n\t}\n\n\tleadingComments := appendDeprecationSuffix(\"\",\n\t\tfield.Desc.ParentFile(),\n\t\tfield.Desc.Options().(*descriptorpb.FieldOptions).GetDeprecated())\n\tg.AnnotateSymbol(message.GoIdent.GoName+\".\"+setterName, protogen.Annotation{\n\t\tLocation: field.Location,\n\t\tSemantic: descriptorpb.GeneratedCodeInfo_Annotation_SET.Enum(),\n\t})\n\tfieldtrackNoInterface(g, message.noInterface)\n\n\t// Oneof field.\n\tif oneof := field.Oneof; oneof != nil && !oneof.Desc.IsSynthetic() {\n\t\tg.P(leadingComments, \"func (x *\", message.GoIdent, \") \", setterName, \"(v \", goType, \") {\")\n\t\tstructPtr := \"x\"\n\t\tif message.isOpaque() && message.isTracked {\n\t\t\t// Add access to zero field for tracking\n\t\t\tg.P(structPtr, \".XXX_ft_\", oneof.GoName, \" = struct{}{}\")\n\t\t}\n\t\tif field.Desc.Kind() == protoreflect.BytesKind {\n\t\t\tg.P(\"if v == nil { v = []byte{} }\")\n\t\t} else if field.Message != nil {\n\t\t\tg.P(\"if v == nil {\")\n\t\t\tg.P(structPtr, \".\", opaqueOneofFieldName(oneof, message.isOpaque()), \"= nil\")\n\t\t\tg.P(\"return\")\n\t\t\tg.P(\"}\")\n\t\t}\n\t\tg.P(structPtr, \".\", opaqueOneofFieldName(oneof, message.isOpaque()), \"= &\", opaqueFieldOneofType(field, message.isOpaque()), \"{v}\")\n\t\tg.P(\"}\")\n\t\tg.P()\n\t\treturn\n\t}\n\n\t// Non-oneof field for open type message.\n\tif !message.isOpaque() {\n\t\tg.P(leadingComments, \"func (x *\", message.GoIdent, \") \", setterName, \"(v \", goType, \") {\")\n\t\tif field.Desc.Cardinality() != protoreflect.Repeated && field.Desc.Kind() == protoreflect.BytesKind {\n\t\t\tg.P(\"if v == nil { v = []byte{} }\")\n\t\t}\n\t\tamp := \"\"\n\t\tif pointer {\n\t\t\tamp = \"&\"\n\t\t}\n\n\t\tv := \"v\"\n\t\tg.P(\"x.\", field.GoName, \" = \", amp, v)\n\t\tg.P(\"}\")\n\t\tg.P()\n\t\treturn\n\t}\n\n\t// Non-oneof field for opaque type message.\n\tg.P(leadingComments, \"func (x *\", message.GoIdent, \") \", setterName, \"(v \", goType, \") {\")\n\tstructPtr := \"x\"\n\tif message.isTracked {\n\t\t// Add access to zero field for tracking\n\t\tg.P(structPtr, \".XXX_ft_\", field.GoName, \" = struct{}{}\")\n\t}\n\tif field.Desc.Cardinality() != protoreflect.Repeated && field.Desc.Kind() == protoreflect.BytesKind {\n\t\tg.P(\"if v == nil { v = []byte{} }\")\n\t}\n\tamp := \"\"\n\tif pointer {\n\t\tamp = \"&\"\n\t}\n\tif usePresence(message, field) {\n\t\tpi := opaqueFieldPresenceIndex(field)\n\t\tai := pi / 32\n\n\t\tif field.Message != nil && field.Desc.IsList() {\n\t\t\tg.P(\"var sv *\", goType)\n\t\t\tg.P(protoimplPackage.Ident(\"X\"), \".AtomicLoadPointer(\", protoimplPackage.Ident(\"Pointer\"), \"(&\", structPtr, \".xxx_hidden_\", field.GoName, \"), \", protoimplPackage.Ident(\"Pointer\"), \"(&sv))\")\n\t\t\tg.P(\"if sv == nil {\")\n\t\t\tg.P(\"sv = &\", goType, \"{}\")\n\t\t\tg.P(protoimplPackage.Ident(\"X\"), \".AtomicInitializePointer(\", protoimplPackage.Ident(\"Pointer\"), \"(&\", structPtr, \".xxx_hidden_\", field.GoName, \"), \", protoimplPackage.Ident(\"Pointer\"), \"(&sv))\")\n\t\t\tg.P(\"}\")\n\t\t\tg.P(\"*sv = v\")\n\t\t\tg.P(protoimplPackage.Ident(\"X\"), \".SetPresent(&(\", structPtr, \".XXX_presence[\", ai, \"]),\", pi, \",\", opaqueNumPresenceFields(message), \")\")\n\t\t} else if field.Message != nil && !field.Desc.IsMap() {\n\t\t\t// Only for lazy messages do we need to set pointers atomically\n\t\t\tif isLazy(field) {\n\t\t\t\tg.P(protoimplPackage.Ident(\"X\"), \".AtomicSetPointer(&\", structPtr, \".xxx_hidden_\", field.GoName, \", \", amp, \"v)\")\n\t\t\t} else {\n\t\t\t\tg.P(structPtr, \".xxx_hidden_\", field.GoName, \" = \", amp, \"v\")\n\t\t\t}\n\t\t\t// When setting a message or slice of messages to a nil\n\t\t\t// value, we must clear the presence bit, else we will\n\t\t\t// later think that this field still needs to be lazily decoded.\n\t\t\tg.P(\"if v == nil {\")\n\t\t\tg.P(protoimplPackage.Ident(\"X\"), \".ClearPresent(&(\", structPtr, \".XXX_presence[\", ai, \"]),\", pi, \")\")\n\t\t\tg.P(\"} else {\")\n\t\t\tg.P(protoimplPackage.Ident(\"X\"), \".SetPresent(&(\", structPtr, \".XXX_presence[\", ai, \"]),\", pi, \",\", opaqueNumPresenceFields(message), \")\")\n\t\t\tg.P(\"}\")\n\t\t} else {\n\t\t\t// Any map or non-message, possibly repeated, field that uses presence (proto2 only)\n\t\t\tg.P(structPtr, \".xxx_hidden_\", field.GoName, \" = \", amp, \"v\")\n\t\t\t// For consistent behaviour with lazy fields, non-map repeated fields should be cleared when\n\t\t\t// the last object is removed. Maps are cleared when set to a nil map.\n\t\t\tif field.Desc.Cardinality() == protoreflect.Repeated { // Includes maps.\n\t\t\t\tg.P(\"if v == nil {\")\n\t\t\t\tg.P(protoimplPackage.Ident(\"X\"), \".ClearPresent(&(\", structPtr, \".XXX_presence[\", ai, \"]),\", pi, \")\")\n\t\t\t\tg.P(\"} else {\")\n\t\t\t}\n\t\t\tg.P(protoimplPackage.Ident(\"X\"), \".SetPresent(&(\", structPtr, \".XXX_presence[\", ai, \"]),\", pi, \",\", opaqueNumPresenceFields(message), \")\")\n\t\t\tif field.Desc.Cardinality() == protoreflect.Repeated {\n\t\t\t\tg.P(\"}\")\n\t\t\t}\n\t\t}\n\t} else {\n\t\t// proto3 non-lazy fields\n\t\tg.P(structPtr, \".xxx_hidden_\", field.GoName, \" = \", amp, \"v\")\n\t}\n\tg.P(\"}\")\n\tg.P()\n}\n\n// usePresence returns true if the presence map should be used for a field. It\n// is always true for lazy message types. It is also true for all scalar fields.\n// repeated, map or message fields are not using the presence map.\nfunc usePresence(message *messageInfo, field *protogen.Field) bool {\n\tif !message.isOpaque() {\n\t\treturn false\n\t}\n\tusePresence, _ := filedesc.UsePresenceForField(field.Desc)\n\treturn usePresence\n}\n\n// opaqueGenHas generates a Has method for a field.\nfunc opaqueGenHas(g *protogen.GeneratedFile, f *fileInfo, message *messageInfo, field *protogen.Field) {\n\thasserName, _ := field.MethodName(\"Has\")\n\n\tleadingComments := appendDeprecationSuffix(\"\",\n\t\tfield.Desc.ParentFile(),\n\t\tfield.Desc.Options().(*descriptorpb.FieldOptions).GetDeprecated())\n\tg.AnnotateSymbol(message.GoIdent.GoName+\".\"+hasserName, protogen.Annotation{Location: field.Location})\n\tfieldtrackNoInterface(g, message.noInterface)\n\n\t// Oneof field.\n\tif oneof := field.Oneof; oneof != nil && !oneof.Desc.IsSynthetic() {\n\t\tg.P(leadingComments, \"func (x *\", message.GoIdent, \") \", hasserName, \"() bool {\")\n\t\tstructPtr := \"x\"\n\t\tg.P(\"if \", structPtr, \" == nil {\")\n\t\tg.P(\"return false\")\n\t\tg.P(\"}\")\n\t\tif message.isOpaque() && message.isTracked {\n\t\t\t// Add access to zero field for tracking\n\t\t\tg.P(\"_ = \", structPtr, \".\", \"XXX_ft_\", oneof.GoName)\n\t\t}\n\t\tg.P(\"_, ok := \", structPtr, \".\", opaqueOneofFieldName(oneof, message.isOpaque()), \".(*\", opaqueFieldOneofType(field, message.isOpaque()), \")\")\n\t\tg.P(\"return ok\")\n\t\tg.P(\"}\")\n\t\tg.P()\n\t\treturn\n\t}\n\n\t// Non-oneof field in open message.\n\tif !message.isOpaque() {\n\t\tg.P(leadingComments, \"func (x *\", message.GoIdent, \") \", hasserName, \"() bool {\")\n\t\tg.P(\"if x == nil {\")\n\t\tg.P(\"return false\")\n\t\tg.P(\"}\")\n\t\tg.P(\"return \", \"x.\", field.GoName, \" != nil\")\n\t\tg.P(\"}\")\n\t\tg.P()\n\t\treturn\n\t}\n\n\t// Non-oneof field in opaque message.\n\tg.P(leadingComments, \"func (x *\", message.GoIdent, \") \", hasserName, \"() bool {\")\n\tg.P(\"if x == nil {\")\n\tg.P(\"return false\")\n\tg.P(\"}\")\n\tstructPtr := \"x\"\n\tif message.isTracked {\n\t\t// Add access to zero field for tracking\n\t\tg.P(\"_ = \", structPtr, \".\", \"XXX_ft_\"+field.GoName)\n\t}\n\tif usePresence(message, field) {\n\t\tpi := opaqueFieldPresenceIndex(field)\n\t\tai := pi / 32\n\t\tg.P(\"return \", protoimplPackage.Ident(\"X\"), \".Present(&(\", structPtr, \".XXX_presence[\", ai, \"]),\", pi, \")\")\n\t} else {\n\t\t// Has for proto3 message without presence\n\t\tg.P(\"return \", structPtr, \".xxx_hidden_\", field.GoName, \" != nil\")\n\t}\n\n\tg.P(\"}\")\n\tg.P()\n}\n\n// opaqueGenClear generates a Clear method for a field.\nfunc opaqueGenClear(g *protogen.GeneratedFile, f *fileInfo, message *messageInfo, field *protogen.Field) {\n\tclearerName, _ := field.MethodName(\"Clear\")\n\tpi := opaqueFieldPresenceIndex(field)\n\tai := pi / 32\n\n\tleadingComments := appendDeprecationSuffix(\"\",\n\t\tfield.Desc.ParentFile(),\n\t\tfield.Desc.Options().(*descriptorpb.FieldOptions).GetDeprecated())\n\tg.AnnotateSymbol(message.GoIdent.GoName+\".\"+clearerName, protogen.Annotation{\n\t\tLocation: field.Location,\n\t\tSemantic: descriptorpb.GeneratedCodeInfo_Annotation_SET.Enum(),\n\t})\n\tfieldtrackNoInterface(g, message.noInterface)\n\n\t// Oneof field.\n\tif oneof := field.Oneof; oneof != nil && !oneof.Desc.IsSynthetic() {\n\t\tg.P(leadingComments, \"func (x *\", message.GoIdent, \") \", clearerName, \"() {\")\n\t\tstructPtr := \"x\"\n\t\tif message.isOpaque() && message.isTracked {\n\t\t\t// Add access to zero field for tracking\n\t\t\tg.P(structPtr, \".\", \"XXX_ft_\", oneof.GoName, \" = struct{}{}\")\n\t\t}\n\t\tg.P(\"if _, ok := \", structPtr, \".\", opaqueOneofFieldName(oneof, message.isOpaque()), \".(*\", opaqueFieldOneofType(field, message.isOpaque()), \"); ok {\")\n\t\tg.P(structPtr, \".\", opaqueOneofFieldName(oneof, message.isOpaque()), \" = nil\")\n\t\tg.P(\"}\")\n\t\tg.P(\"}\")\n\t\tg.P()\n\t\treturn\n\t}\n\n\t// Non-oneof field in open message.\n\tif !message.isOpaque() {\n\t\tg.P(leadingComments, \"func (x *\", message.GoIdent, \") \", clearerName, \"() {\")\n\t\tg.P(\"x.\", field.GoName, \" = nil\")\n\t\tg.P(\"}\")\n\t\tg.P()\n\t\treturn\n\t}\n\n\t// Non-oneof field in opaque message.\n\tg.P(leadingComments, \"func (x *\", message.GoIdent, \") \", clearerName, \"() {\")\n\tstructPtr := \"x\"\n\tif message.isTracked {\n\t\t// Add access to zero field for tracking\n\t\tg.P(structPtr, \".\", \"XXX_ft_\", field.GoName, \" = struct{}{}\")\n\t}\n\n\tif usePresence(message, field) {\n\t\tg.P(protoimplPackage.Ident(\"X\"), \".ClearPresent(&(\", structPtr, \".XXX_presence[\", ai, \"]),\", pi, \")\")\n\t}\n\n\t// Avoid needing to read the presence value in Get by ensuring that we set the\n\t// right zero value (unless we have an explicit default, in which case we\n\t// revert to presence checking in Get). Rationale: Get is called far more\n\t// frequently than Clear, it should be as lean as possible.\n\tzv := opaqueZeroValueForField(g, field)\n\t// For lazy, (repeated) message fields are unmarshalled lazily. Hence they are\n\t// assigned atomically in Getters (which are allowed to be called\n\t// concurrently). Due to this, historically, the code generator would use\n\t// atomic operations everywhere.\n\t//\n\t// TODO(b/291588964): Stop using atomic operations for non-presence fields in\n\t//                    write calls (Set/Clear). Concurrent reads are allowed,\n\t//                    but concurrent read/write or write/write are not, we\n\t//                    shouldn't cater to it.\n\tif isLazy(field) {\n\t\tgoType, _ := opaqueFieldGoType(g, f, message, field)\n\t\tg.P(protoimplPackage.Ident(\"X\"), \".AtomicSetPointer(&\", structPtr, \".xxx_hidden_\", field.GoName, \",(\", goType, \")(\", zv, \"))\")\n\t} else if !field.Desc.HasDefault() {\n\t\tg.P(structPtr, \".xxx_hidden_\", field.GoName, \" = \", zv)\n\t}\n\tg.P(\"}\")\n\tg.P()\n}\n\n// Determine what value to set a cleared field to.\nfunc opaqueZeroValueForField(g *protogen.GeneratedFile, field *protogen.Field) string {\n\tif field.Desc.Cardinality() == protoreflect.Repeated {\n\t\treturn \"nil\"\n\t}\n\tswitch field.Desc.Kind() {\n\tcase protoreflect.StringKind:\n\t\treturn \"nil\"\n\tcase protoreflect.MessageKind, protoreflect.GroupKind, protoreflect.BytesKind:\n\t\treturn \"nil\"\n\tcase protoreflect.BoolKind:\n\t\treturn \"false\"\n\tcase protoreflect.EnumKind:\n\t\treturn g.QualifiedGoIdent(field.Enum.Values[0].GoIdent)\n\tdefault:\n\t\treturn \"0\"\n\t}\n}\n\n// opaqueGenGetOneof generates a Get function for a oneof union.\nfunc opaqueGenGetOneof(g *protogen.GeneratedFile, f *fileInfo, message *messageInfo, oneof *protogen.Oneof) {\n\tifName := opaqueOneofInterfaceName(oneof)\n\tg.AnnotateSymbol(message.GoIdent.GoName+\".Get\"+oneof.GoName, protogen.Annotation{Location: oneof.Location})\n\tfieldtrackNoInterface(g, message.isTracked)\n\tg.P(\"func (x *\", message.GoIdent.GoName, \") Get\", oneof.GoName, \"() \", ifName, \" {\")\n\tg.P(\"if x != nil {\")\n\tg.P(\"return x.\", opaqueOneofFieldName(oneof, message.isOpaque()))\n\tg.P(\"}\")\n\tg.P(\"return nil\")\n\tg.P(\"}\")\n\tg.P()\n}\n\n// opaqueGenHasOneof generates a Has function for a oneof union.\nfunc opaqueGenHasOneof(g *protogen.GeneratedFile, f *fileInfo, message *messageInfo, oneof *protogen.Oneof) {\n\tfieldtrackNoInterface(g, message.noInterface)\n\thasserName := oneof.MethodName(\"Has\")\n\tg.P(\"func (x *\", message.GoIdent, \") \", hasserName, \"() bool {\")\n\tg.P(\"if x == nil {\")\n\tg.P(\"return false\")\n\tg.P(\"}\")\n\tstructPtr := \"x\"\n\tif message.isOpaque() && message.isTracked {\n\t\t// Add access to zero field for tracking\n\t\tg.P(\"_ = \", structPtr, \".XXX_ft_\", oneof.GoName)\n\t}\n\tg.P(\"return \", structPtr, \".\", opaqueOneofFieldName(oneof, message.isOpaque()), \" != nil\")\n\tg.P(\"}\")\n\tg.P()\n}\n\n// opaqueGenClearOneof generates a Clear function for a oneof union.\nfunc opaqueGenClearOneof(g *protogen.GeneratedFile, f *fileInfo, message *messageInfo, oneof *protogen.Oneof) {\n\tfieldtrackNoInterface(g, message.noInterface)\n\tclearerName := oneof.MethodName(\"Clear\")\n\tg.P(\"func (x *\", message.GoIdent, \") \", clearerName, \"() {\")\n\tstructPtr := \"x\"\n\tif message.isOpaque() && message.isTracked {\n\t\t// Add access to zero field for tracking\n\t\tg.P(structPtr, \".\", \"XXX_ft_\", oneof.GoName, \" = struct{}{}\")\n\t}\n\tg.P(structPtr, \".\", opaqueOneofFieldName(oneof, message.isOpaque()), \" = nil\")\n\tg.P(\"}\")\n\tg.P()\n}\n\n// opaqueGenWhichOneof generates the Which method for each oneof union, as well as the case values for each member\n// of that union.\nfunc opaqueGenWhichOneof(g *protogen.GeneratedFile, f *fileInfo, message *messageInfo) {\n\t// Go through the message, and for each field that is the first of a oneof field, dig down\n\t// and generate constants + the actual which method.\n\toneofIndex := 0\n\tfor _, field := range message.Fields {\n\t\tif oneof := field.Oneof; oneof != nil {\n\t\t\tif !isFirstOneofField(field) {\n\t\t\t\tcontinue\n\t\t\t}\n\t\t\tcaseType := opaqueOneofCaseTypeName(oneof)\n\t\t\tg.P(\"const \", message.GoIdent.GoName, \"_\", oneof.GoName, \"_not_set_case \", caseType, \" = \", 0)\n\t\t\tfor _, f := range oneof.Fields {\n\t\t\t\tg.P(\"const \", message.GoIdent.GoName, \"_\", f.GoName, \"_case \", caseType, \" = \", f.Desc.Number())\n\t\t\t}\n\t\t\tfieldtrackNoInterface(g, message.noInterface)\n\t\t\twhicherName := oneof.MethodName(\"Which\")\n\t\t\tg.P(\"func (x *\", message.GoIdent, \") \", whicherName, \"() \", caseType, \" {\")\n\t\t\tg.P(\"if x == nil {\")\n\t\t\tg.P(\"return \", message.GoIdent.GoName, \"_\", oneof.GoName, \"_not_set_case \")\n\t\t\tg.P(\"}\")\n\t\t\tg.P(\"switch x.\", opaqueOneofFieldName(oneof, message.isOpaque()), \".(type) {\")\n\t\t\tfor _, f := range oneof.Fields {\n\t\t\t\tg.P(\"case *\", opaqueFieldOneofType(f, message.isOpaque()), \":\")\n\t\t\t\tg.P(\"return \", message.GoIdent.GoName, \"_\", f.GoName, \"_case\")\n\t\t\t}\n\t\t\tg.P(\"default\", \":\")\n\t\t\tg.P(\"return \", message.GoIdent.GoName, \"_\", oneof.GoName, \"_not_set_case \")\n\t\t\tg.P(\"}\")\n\t\t\tg.P(\"}\")\n\t\t\tg.P()\n\t\t\toneofIndex++\n\t\t}\n\t}\n}\n\nfunc opaqueNeedsPresenceArray(message *messageInfo) bool {\n\tif !message.isOpaque() {\n\t\treturn false\n\t}\n\tfor _, field := range message.Fields {\n\t\tif usePresence, _ := filedesc.UsePresenceForField(field.Desc); usePresence {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}\n\nfunc opaqueNeedsLazyStruct(message *messageInfo) bool {\n\tfor _, field := range message.Fields {\n\t\tif isLazy(field) {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}\n\n// opaqueGenMessageBuilder generates a Builder type for a message.\nfunc opaqueGenMessageBuilder(g *protogen.GeneratedFile, f *fileInfo, message *messageInfo) {\n\tif message.isOpen() {\n\t\treturn\n\t}\n\t// Builder type.\n\tbName := g.QualifiedGoIdent(message.GoIdent) + genid.BuilderSuffix_goname\n\tg.AnnotateSymbol(message.GoIdent.GoName+genid.BuilderSuffix_goname, protogen.Annotation{Location: message.Location})\n\n\tleadingComments := appendDeprecationSuffix(\"\",\n\t\tmessage.Desc.ParentFile(),\n\t\tmessage.Desc.Options().(*descriptorpb.MessageOptions).GetDeprecated())\n\tg.P(leadingComments, \"type \", bName, \" struct {\")\n\tg.P(\"_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.\")\n\tg.P()\n\tfor _, field := range message.Fields {\n\t\toneof := field.Oneof\n\n\t\tgoType, pointer := opaqueBuilderFieldGoType(g, f, message, field)\n\t\tif pointer {\n\t\t\tgoType = \"*\" + goType\n\t\t} else if oneof != nil && fieldDefaultValue(g, f, message, field) != \"nil\" {\n\t\t\tgoType = \"*\" + goType\n\t\t}\n\t\t// Track all non-oneof fields. Note: synthetic oneofs are an\n\t\t// implementation detail of proto3 optional fields:\n\t\t// go/proto-proposals/proto3-presence.md, which should be tracked.\n\t\ttag := \"\"\n\t\tif (oneof == nil || oneof.Desc.IsSynthetic()) && message.isTracked {\n\t\t\ttag = \"`go:\\\"track\\\"`\"\n\t\t}\n\t\tif oneof != nil && oneof.Fields[0] == field && !oneof.Desc.IsSynthetic() {\n\t\t\tif oneof.Comments.Leading != \"\" {\n\t\t\t\tg.P(oneof.Comments.Leading)\n\t\t\t\tg.P()\n\t\t\t}\n\t\t\tg.P(\"// Fields of oneof \", opaqueOneofFieldName(oneof, message.isOpaque()), \":\")\n\t\t}\n\t\tg.AnnotateSymbol(field.Parent.GoIdent.GoName+genid.BuilderSuffix_goname+\".\"+field.BuilderFieldName(), protogen.Annotation{Location: field.Location})\n\t\tleadingComments := appendDeprecationSuffix(field.Comments.Leading,\n\t\t\tfield.Desc.ParentFile(),\n\t\t\tfield.Desc.Options().(*descriptorpb.FieldOptions).GetDeprecated())\n\t\tg.P(leadingComments,\n\t\t\tfield.BuilderFieldName(), \" \", goType, \" \", tag)\n\t\tif oneof != nil && oneof.Fields[len(oneof.Fields)-1] == field && !oneof.Desc.IsSynthetic() {\n\t\t\tg.P(\"// -- end of \", opaqueOneofFieldName(oneof, message.isOpaque()))\n\t\t}\n\t}\n\tg.P(\"}\")\n\tg.P()\n\n\topaqueGenBuildMethod(g, f, message, bName)\n}\n\n// opaqueGenBuildMethod generates the actual Build method for the builder\nfunc opaqueGenBuildMethod(g *protogen.GeneratedFile, f *fileInfo, message *messageInfo, bName string) {\n\t// Build method on the builder type.\n\tfieldtrackNoInterface(g, message.noInterface)\n\tg.P(\"func (b0 \", bName, \") Build() *\", message.GoIdent, \" {\")\n\tg.P(\"m0 := &\", message.GoIdent, \"{}\")\n\n\tif message.isTracked {\n\t\t// Redeclare the builder and message types as local\n\t\t// defined types, so that field tracking records the\n\t\t// field uses against these types instead of the\n\t\t// original struct types.\n\t\t//\n\t\t// TODO: Actually redeclare the struct types\n\t\t// without `go:\"track\"` tags?\n\t\tg.P(\"type (notrackB \", bName, \"; notrackM \", message.GoIdent, \")\")\n\t\tg.P(\"b, x := (*notrackB)(&b0), (*notrackM)(m0)\")\n\t} else {\n\t\tg.P(\"b, x := &b0, m0\")\n\t}\n\tg.P(\"_, _ = b, x\")\n\n\tfor _, field := range message.Fields {\n\t\toneof := field.Oneof\n\t\tif oneof != nil && !oneof.Desc.IsSynthetic() {\n\t\t\tqual := \"\"\n\t\t\tif fieldDefaultValue(g, f, message, field) != \"nil\" {\n\t\t\t\tqual = \"*\"\n\t\t\t}\n\n\t\t\tg.P(\"if b.\", field.BuilderFieldName(), \" != nil {\")\n\t\t\toneofName := opaqueOneofFieldName(oneof, message.isOpaque())\n\t\t\toneofType := opaqueFieldOneofType(field, message.isOpaque())\n\t\t\tg.P(\"x.\", oneofName, \" = &\", oneofType, \"{\", qual, \"b.\", field.BuilderFieldName(), \"}\")\n\t\t\tg.P(\"}\")\n\t\t} else { // proto3 optional ends up here (synthetic oneof)\n\t\t\tqual := \"\"\n\t\t\t_, pointer := opaqueBuilderFieldGoType(g, f, message, field)\n\t\t\tif pointer && message.isOpaque() && !field.Desc.IsList() && field.Desc.Kind() != protoreflect.StringKind {\n\t\t\t\tqual = \"*\"\n\t\t\t} else if message.isOpaque() && field.Desc.IsList() && field.Desc.Message() != nil {\n\t\t\t\tqual = \"&\"\n\t\t\t}\n\t\t\tpresence := usePresence(message, field)\n\t\t\tif presence {\n\t\t\t\tg.P(\"if b.\", field.BuilderFieldName(), \" != nil {\")\n\t\t\t}\n\t\t\tif presence {\n\t\t\t\tpi := opaqueFieldPresenceIndex(field)\n\t\t\t\tg.P(protoimplPackage.Ident(\"X\"), \".SetPresentNonAtomic(&(x.XXX_presence[\", pi/32, \"]),\", pi, \",\", opaqueNumPresenceFields(message), \")\")\n\t\t\t}\n\t\t\tgoName := field.GoName\n\t\t\tif message.isOpaque() {\n\t\t\t\tgoName = \"xxx_hidden_\" + goName\n\t\t\t}\n\t\t\tg.P(\"x.\", goName, \" = \", qual, \"b.\", field.BuilderFieldName())\n\t\t\tif presence {\n\t\t\t\tg.P(\"}\")\n\t\t\t}\n\t\t}\n\t}\n\n\tg.P(\"return m0\")\n\tg.P(\"}\")\n\tg.P()\n}\n\n// opaqueBuilderFieldGoType does the same as opaqueFieldGoType, but corrects for\n// types that are different in a builder\nfunc opaqueBuilderFieldGoType(g *protogen.GeneratedFile, f *fileInfo, message *messageInfo, field *protogen.Field) (goType string, pointer bool) {\n\tgoType, pointer = opaqueFieldGoType(g, f, message, field)\n\tkind := field.Desc.Kind()\n\n\t// Use []T instead of *[]T for opaque repeated lists.\n\tif message.isOpaque() && field.Desc.IsList() {\n\t\tpointer = false\n\t}\n\n\t// Use *T for optional fields.\n\toptional := field.Desc.HasPresence()\n\tif optional &&\n\t\tkind != protoreflect.GroupKind &&\n\t\tkind != protoreflect.MessageKind &&\n\t\tkind != protoreflect.BytesKind &&\n\t\tfield.Desc.Cardinality() != protoreflect.Repeated {\n\t\tpointer = true\n\t}\n\n\treturn goType, pointer\n}\n\nfunc opaqueGenOneofWrapperTypes(g *protogen.GeneratedFile, f *fileInfo, message *messageInfo) {\n\t// TODO: We should avoid generating these wrapper types in pure-opaque mode.\n\tif !message.isOpen() {\n\t\tfor _, oneof := range message.Oneofs {\n\t\t\tif oneof.Desc.IsSynthetic() {\n\t\t\t\tcontinue\n\t\t\t}\n\t\t\tcaseTypeName := opaqueOneofCaseTypeName(oneof)\n\t\t\tg.P(\"type \", caseTypeName, \" \", protoreflectPackage.Ident(\"FieldNumber\"))\n\t\t\tg.P(\"\")\n\n\t\t\tidx := f.allMessagesByPtr[message]\n\t\t\ttypesVar := messageTypesVarName(f)\n\t\t\tg.P(\"func (x \", caseTypeName, \") String() string {\")\n\t\t\tg.P(\"md := \", typesVar, \"[\", idx, \"].Descriptor()\")\n\t\t\tg.P(\"if x == 0 {\")\n\t\t\tg.P(`return \"not set\"`)\n\t\t\tg.P(\"}\")\n\t\t\tg.P(\"return \", protoimplPackage.Ident(\"X\"), \".MessageFieldStringOf(md, \", protoreflectPackage.Ident(\"FieldNumber\"), \"(x))\")\n\t\t\tg.P(\"}\")\n\t\t\tg.P()\n\t\t}\n\t}\n\tfor _, oneof := range message.Oneofs {\n\t\tif oneof.Desc.IsSynthetic() {\n\t\t\tcontinue\n\t\t}\n\t\tifName := opaqueOneofInterfaceName(oneof)\n\t\tg.P(\"type \", ifName, \" interface {\")\n\t\tg.P(ifName, \"()\")\n\t\tg.P(\"}\")\n\t\tg.P()\n\t\tfor _, field := range oneof.Fields {\n\t\t\tname := opaqueFieldOneofType(field, message.isOpaque())\n\t\t\tg.AnnotateSymbol(name.GoName, protogen.Annotation{Location: field.Location})\n\t\t\tg.AnnotateSymbol(name.GoName+\".\"+field.GoName, protogen.Annotation{Location: field.Location})\n\t\t\tg.P(\"type \", name, \" struct {\")\n\t\t\tgoType, _ := opaqueFieldGoType(g, f, message, field)\n\t\t\tprotobufTagValue := fieldProtobufTagValue(field)\n\t\t\tif g.InternalStripForEditionsDiff() {\n\t\t\t\tprotobufTagValue = strings.ReplaceAll(protobufTagValue, \",proto3\", \"\")\n\t\t\t}\n\t\t\ttags := structTags{\n\t\t\t\t{\"protobuf\", protobufTagValue},\n\t\t\t}\n\t\t\tleadingComments := appendDeprecationSuffix(field.Comments.Leading,\n\t\t\t\tfield.Desc.ParentFile(),\n\t\t\t\tfield.Desc.Options().(*descriptorpb.FieldOptions).GetDeprecated())\n\t\t\tg.P(leadingComments,\n\t\t\t\tfield.GoName, \" \", goType, tags,\n\t\t\t\ttrailingComment(field.Comments.Trailing))\n\t\t\tg.P(\"}\")\n\t\t\tg.P()\n\t\t}\n\t\tfor _, field := range oneof.Fields {\n\t\t\tg.P(\"func (*\", opaqueFieldOneofType(field, message.isOpaque()), \") \", ifName, \"() {}\")\n\t\t\tg.P()\n\t\t}\n\t}\n}\n\n// opaqueFieldGoType returns the Go type used for a field.\n//\n// If it returns pointer=true, the struct field is a pointer to the type.\nfunc opaqueFieldGoType(g *protogen.GeneratedFile, f *fileInfo, message *messageInfo, field *protogen.Field) (goType string, pointer bool) {\n\tpointer = true\n\tswitch field.Desc.Kind() {\n\tcase protoreflect.BoolKind:\n\t\tgoType = \"bool\"\n\tcase protoreflect.EnumKind:\n\t\tgoType = g.QualifiedGoIdent(field.Enum.GoIdent)\n\tcase protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind:\n\t\tgoType = \"int32\"\n\tcase protoreflect.Uint32Kind, protoreflect.Fixed32Kind:\n\t\tgoType = \"uint32\"\n\tcase protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Sfixed64Kind:\n\t\tgoType = \"int64\"\n\tcase protoreflect.Uint64Kind, protoreflect.Fixed64Kind:\n\t\tgoType = \"uint64\"\n\tcase protoreflect.FloatKind:\n\t\tgoType = \"float32\"\n\tcase protoreflect.DoubleKind:\n\t\tgoType = \"float64\"\n\tcase protoreflect.StringKind:\n\t\tgoType = \"string\"\n\tcase protoreflect.BytesKind:\n\t\tgoType = \"[]byte\"\n\t\tpointer = false\n\tcase protoreflect.MessageKind, protoreflect.GroupKind:\n\t\tgoType = opaqueMessageFieldGoType(g, f, field, message.isOpaque())\n\t\tpointer = false\n\t}\n\tswitch {\n\tcase field.Desc.IsList():\n\t\tgoType = \"[]\" + goType\n\t\tpointer = false\n\tcase field.Desc.IsMap():\n\t\tkeyType, _ := opaqueFieldGoType(g, f, message, field.Message.Fields[0])\n\t\tvalType, _ := opaqueFieldGoType(g, f, message, field.Message.Fields[1])\n\t\treturn fmt.Sprintf(\"map[%v]%v\", keyType, valType), false\n\t}\n\n\t// Extension fields always have pointer type, even when defined in a proto3 file.\n\tif !field.Desc.IsExtension() && !field.Desc.HasPresence() {\n\t\tpointer = false\n\t}\n\n\tif message.isOpaque() {\n\t\tswitch {\n\t\tcase field.Desc.IsList() && field.Desc.Message() != nil:\n\t\t\tpointer = true\n\t\tcase !field.Desc.IsList() && field.Desc.Kind() == protoreflect.StringKind:\n\t\t\tswitch {\n\t\t\tcase field.Desc.HasPresence():\n\t\t\t\tpointer = true\n\t\t\tdefault:\n\t\t\t\tpointer = false\n\t\t\t}\n\t\tdefault:\n\t\t\tpointer = false\n\t\t}\n\t}\n\n\treturn goType, pointer\n}\n\nfunc opaqueMessageFieldGoType(g *protogen.GeneratedFile, f *fileInfo, field *protogen.Field, isOpaque bool) string {\n\treturn \"*\" + g.QualifiedGoIdent(field.Message.GoIdent)\n}\n\n// opaqueFieldPresenceIndex returns the index to pass to presence functions.\n//\n// TODO: field.Desc.Index() would be simpler, and would give space to record the presence of oneof fields.\nfunc opaqueFieldPresenceIndex(field *protogen.Field) int {\n\tstructFieldIndex := 0\n\tfor _, f := range field.Parent.Fields {\n\t\tif field == f {\n\t\t\tbreak\n\t\t}\n\t\tif f.Oneof == nil || isLastOneofField(f) {\n\t\t\tstructFieldIndex++\n\t\t}\n\t}\n\treturn structFieldIndex\n}\n\n// opaqueNumPresenceFields returns the number of fields that may be passed to presence functions.\n//\n// Since all fields in a oneof currently share a single entry in the presence bitmap,\n// this is not just len(message.Fields).\nfunc opaqueNumPresenceFields(message *messageInfo) int {\n\tif len(message.Fields) == 0 {\n\t\treturn 0\n\t}\n\treturn opaqueFieldPresenceIndex(message.Fields[len(message.Fields)-1]) + 1\n}\n\nfunc fieldtrackNoInterface(g *protogen.GeneratedFile, isTracked bool) {\n\tif isTracked {\n\t\tg.P(\"//go:nointerface\")\n\t}\n}\n\n// opaqueOneofFieldName returns the name of the struct field that holds\n// the value of a oneof.\nfunc opaqueOneofFieldName(oneof *protogen.Oneof, isOpaque bool) string {\n\tif isOpaque {\n\t\treturn \"xxx_hidden_\" + oneof.GoName\n\t}\n\treturn oneof.GoName\n}\n\nfunc opaqueFieldOneofType(field *protogen.Field, isOpaque bool) protogen.GoIdent {\n\tident := protogen.GoIdent{\n\t\tGoImportPath: field.Parent.GoIdent.GoImportPath,\n\t\tGoName:       field.Parent.GoIdent.GoName + \"_\" + field.GoName,\n\t}\n\t// Check for collisions with nested messages or enums.\n\t//\n\t// This conflict resolution is incomplete: Among other things, it\n\t// does not consider collisions with other oneof field types.\nLoop:\n\tfor {\n\t\tfor _, message := range field.Parent.Messages {\n\t\t\tif message.GoIdent == ident {\n\t\t\t\tident.GoName += \"_\"\n\t\t\t\tcontinue Loop\n\t\t\t}\n\t\t}\n\t\tfor _, enum := range field.Parent.Enums {\n\t\t\tif enum.GoIdent == ident {\n\t\t\t\tident.GoName += \"_\"\n\t\t\t\tcontinue Loop\n\t\t\t}\n\t\t}\n\t\treturn unexportIdent(ident, isOpaque)\n\t}\n}\n\n// unexportIdent turns id into its unexported version (by lower-casing), but\n// only if isOpaque is set. This function is used for oneof wrapper types,\n// which remain exported in the non-opaque API for now.\nfunc unexportIdent(id protogen.GoIdent, isOpaque bool) protogen.GoIdent {\n\tif !isOpaque {\n\t\treturn id\n\t}\n\tr, sz := utf8.DecodeRuneInString(id.GoName)\n\tif r == utf8.RuneError {\n\t\tpanic(fmt.Sprintf(\"Go identifier %q contains invalid UTF8?!\", id.GoName))\n\t}\n\tr = unicode.ToLower(r)\n\tid.GoName = string(r) + id.GoName[sz:]\n\treturn id\n}\n\nfunc opaqueOneofInterfaceName(oneof *protogen.Oneof) string {\n\treturn fmt.Sprintf(\"is%s_%s\", oneof.Parent.GoIdent.GoName, oneof.GoName)\n}\nfunc opaqueOneofCaseTypeName(oneof *protogen.Oneof) string {\n\treturn fmt.Sprintf(\"case_%s_%s\", oneof.Parent.GoIdent.GoName, oneof.GoName)\n}\n\n// isFirstOneofField reports whether this is the first field in a oneof.\nfunc isFirstOneofField(field *protogen.Field) bool {\n\treturn field.Oneof != nil && field == field.Oneof.Fields[0] && !field.Oneof.Desc.IsSynthetic()\n}\n\n// isLastOneofField returns true if this is the last field in a oneof.\nfunc isLastOneofField(field *protogen.Field) bool {\n\treturn field.Oneof != nil && field == field.Oneof.Fields[len(field.Oneof.Fields)-1]\n}\n
+===================================================================
+diff --git a/cmd/protoc-gen-go/internal_gengo/opaque.go b/cmd/protoc-gen-go/internal_gengo/opaque.go
+--- a/cmd/protoc-gen-go/internal_gengo/opaque.go	(revision 999987b74cf0525f88dc50dd3da88c97ad90484c)
++++ b/cmd/protoc-gen-go/internal_gengo/opaque.go	(date 1761648595799)
+@@ -9,12 +9,12 @@
+ 	"strings"
+ 	"unicode"
+ 	"unicode/utf8"
+-
++	
+ 	"google.golang.org/protobuf/compiler/protogen"
+ 	"google.golang.org/protobuf/internal/filedesc"
+ 	"google.golang.org/protobuf/internal/genid"
+ 	"google.golang.org/protobuf/reflect/protoreflect"
+-
++	
+ 	"google.golang.org/protobuf/types/descriptorpb"
+ )
+ 
+@@ -31,24 +31,28 @@
+ 		message.Desc.Options().(*descriptorpb.MessageOptions).GetDeprecated())
+ 	g.P(leadingComments,
+ 		"type ", message.GoIdent, " struct {")
+-
++	
+ 	sf := f.allMessageFieldsByPtr[message]
+ 	if sf == nil {
+ 		sf = new(structFields)
+ 		f.allMessageFieldsByPtr[message] = sf
+ 	}
+-
++	
+ 	var tags structTags
+ 	switch {
+ 	case message.isOpen():
+ 		tags = structTags{{"protogen", "open.v1"}}
+ 	case message.isHybrid():
+-		tags = structTags{{"protogen", "hybrid.v1"}}
++		tags = structTags{{"protogen", "hybrid.v1"}, {"gorm", "-"}}
+ 	case message.isOpaque():
+-		tags = structTags{{"protogen", "opaque.v1"}}
++		tags = structTags{{"protogen", "opaque.v1"}, {"gorm", "-"}}
+ 	}
+-
+-	g.P(genid.State_goname, " ", protoimplPackage.Ident("MessageState"), tags)
++	if message.isOpen() {
++		g.P(genid.State_goname, " ", protoimplPackage.Ident("MessageState"), " ", "`", `protogen:"open.v1" gorm:"-" json:"-"`, "`")
++	} else {
++		g.P(genid.State_goname, " ", protoimplPackage.Ident("MessageState"), tags)
++	}
++	
+ 	sf.append(genid.State_goname)
+ 	fields := message.Fields
+ 	for _, field := range fields {
+@@ -57,7 +61,7 @@
+ 	opaqueGenMessageInternalFields(g, f, message, sf)
+ 	g.P("}")
+ 	g.P()
+-
++	
+ 	genMessageKnownFunctions(g, f, message)
+ 	genMessageDefaultDecls(g, f, message)
+ 	opaqueGenMessageMethods(g, f, message)
+@@ -78,7 +82,7 @@
+ 		opaqueGenOneofFields(g, f, message, oneof, sf)
+ 		return
+ 	}
+-
++	
+ 	goType, pointer := opaqueFieldGoType(g, f, message, field)
+ 	if pointer {
+ 		goType = "*" + goType
+@@ -107,12 +111,12 @@
+ 			{"protobuf_val", valTagValue},
+ 		}...)
+ 	}
+-
++	
+ 	name := field.GoName
+ 	if message.isOpaque() {
+ 		name = "xxx_hidden_" + name
+ 	}
+-
++	
+ 	if message.isOpaque() {
+ 		g.P(name, " ", goType, tags)
+ 		sf.append(name)
+@@ -148,10 +152,10 @@
+ 			{"go", "track"},
+ 		}...)
+ 	}
+-
++	
+ 	oneofName := opaqueOneofFieldName(oneof, message.isOpaque())
+ 	goType := opaqueOneofInterfaceName(oneof)
+-
++	
+ 	if message.isOpaque() {
+ 		g.P(oneofName, " ", goType, tags)
+ 		sf.append(oneofName)
+@@ -162,7 +166,7 @@
+ 		}
+ 		return
+ 	}
+-
++	
+ 	leadingComments := oneof.Comments.Leading
+ 	if leadingComments != "" {
+ 		leadingComments += "\n"
+@@ -189,7 +193,7 @@
+ 		}
+ 		g.P("XXX_raceDetectHookData ", protoimplPackage.Ident("RaceDetectHookData"))
+ 		sf.append("XXX_raceDetectHookData")
+-
++		
+ 		// Presence must be stored in a data type no larger than 32 bit:
+ 		//
+ 		// Presence used to be a uint64, accessed with atomic.LoadUint64, but it
+@@ -203,22 +207,22 @@
+ 		sf.append("XXX_presence")
+ 	}
+ 	if message.Desc.ExtensionRanges().Len() > 0 {
+-		g.P(genid.ExtensionFields_goname, " ", protoimplPackage.Ident("ExtensionFields"))
++		g.P(genid.ExtensionFields_goname, " ", protoimplPackage.Ident("ExtensionFields"), " `gorm:\"-\"`")
+ 		sf.append(genid.ExtensionFields_goname)
+ 	}
+-	g.P(genid.UnknownFields_goname, " ", protoimplPackage.Ident("UnknownFields"))
++	g.P(genid.UnknownFields_goname, " ", protoimplPackage.Ident("UnknownFields"), " `gorm:\"-\"`")
+ 	sf.append(genid.UnknownFields_goname)
+-	g.P(genid.SizeCache_goname, " ", protoimplPackage.Ident("SizeCache"))
++	g.P(genid.SizeCache_goname, " ", protoimplPackage.Ident("SizeCache"), " `gorm:\"-\"`")
+ 	sf.append(genid.SizeCache_goname)
+ }
+ 
+ func opaqueGenMessageMethods(g *protogen.GeneratedFile, f *fileInfo, message *messageInfo) {
+ 	genMessageBaseMethods(g, f, message)
+-
++	
+ 	isRepeated := func(field *protogen.Field) bool {
+ 		return field.Desc.Cardinality() == protoreflect.Repeated
+ 	}
+-
++	
+ 	for _, field := range message.Fields {
+ 		if isFirstOneofField(field) && !message.isOpaque() {
+ 			opaqueGenGetOneof(g, f, message, field.Oneof)
+@@ -238,11 +242,11 @@
+ 		if message.isOpen() || isRepeated(field) {
+ 			continue
+ 		}
+-
++		
+ 		if !field.Desc.HasPresence() {
+ 			continue
+ 		}
+-
++		
+ 		if isFirstOneofField(field) {
+ 			opaqueGenHasOneof(g, f, message, field.Oneof)
+ 		}
+@@ -257,7 +261,7 @@
+ 		if !field.Desc.HasPresence() {
+ 			continue
+ 		}
+-
++		
+ 		if isFirstOneofField(field) {
+ 			opaqueGenClearOneof(g, f, message, field.Oneof)
+ 		}
+@@ -267,7 +271,7 @@
+ 	if !message.isOpen() {
+ 		opaqueGenWhichOneof(g, f, message)
+ 	}
+-
++	
+ 	if g.InternalStripForEditionsDiff() {
+ 		return
+ 	}
+@@ -278,7 +282,7 @@
+ 	if field.Message == nil {
+ 		return false
+ 	}
+-
++	
+ 	// Was the field marked as [lazy = true] in the .proto file?
+ 	return field.Desc.(interface{ IsLazy() bool }).IsLazy()
+ }
+@@ -287,7 +291,7 @@
+ func opaqueGenGet(g *protogen.GeneratedFile, f *fileInfo, message *messageInfo, field *protogen.Field) {
+ 	goType, pointer := opaqueFieldGoType(g, f, message, field)
+ 	getterName, bcName := field.MethodName("Get")
+-
++	
+ 	// If we need a backwards compatible getter name, we add it now.
+ 	if bcName != "" {
+ 		defer func() {
+@@ -298,15 +302,15 @@
+ 			g.P()
+ 		}()
+ 	}
+-
++	
+ 	leadingComments := appendDeprecationSuffix("",
+ 		field.Desc.ParentFile(),
+ 		field.Desc.Options().(*descriptorpb.FieldOptions).GetDeprecated())
+ 	fieldtrackNoInterface(g, message.isTracked)
+ 	g.AnnotateSymbol(message.GoIdent.GoName+"."+getterName, protogen.Annotation{Location: field.Location})
+-
++	
+ 	defaultValue := fieldDefaultValue(g, f, message, field)
+-
++	
+ 	// Oneof field.
+ 	if oneof := field.Oneof; oneof != nil && !oneof.Desc.IsSynthetic() {
+ 		structPtr := "x"
+@@ -325,7 +329,7 @@
+ 		g.P()
+ 		return
+ 	}
+-
++	
+ 	// Non-oneof field for open type message.
+ 	if !message.isOpaque() {
+ 		g.P(leadingComments, "func (x *", message.GoIdent, ") ", getterName, "() ", goType, " {")
+@@ -345,7 +349,7 @@
+ 		g.P()
+ 		return
+ 	}
+-
++	
+ 	// Non-oneof field for opaque type message.
+ 	g.P(leadingComments, "func (x *", message.GoIdent, ") ", getterName, "() ", goType, "{")
+ 	structPtr := "x"
+@@ -368,7 +372,7 @@
+ 		isEnum := field.Desc.Kind() == protoreflect.EnumKind
+ 		usePresenceForRead := (isLazy(field)) ||
+ 			field.Desc.HasDefault() || isEnum
+-
++		
+ 		if usePresenceForRead {
+ 			g.P("if ", protoimplPackage.Ident("X"), ".Present(&(", structPtr, ".XXX_presence[", ai, "]),", pi, ") {")
+ 		}
+@@ -390,7 +394,7 @@
+ 			if pointer {
+ 				g.P("if ", structPtr, ".xxx_hidden_", field.GoName, "!= nil {")
+ 			}
+-
++			
+ 			g.P("return ", star, structPtr, ".xxx_hidden_", field.GoName)
+ 			if pointer {
+ 				g.P("}")
+@@ -440,7 +444,7 @@
+ func opaqueGenSet(g *protogen.GeneratedFile, f *fileInfo, message *messageInfo, field *protogen.Field) {
+ 	goType, pointer := opaqueFieldGoType(g, f, message, field)
+ 	setterName, bcName := field.MethodName("Set")
+-
++	
+ 	// If we need a backwards compatible setter name, we add it now.
+ 	if bcName != "" {
+ 		defer func() {
+@@ -451,7 +455,7 @@
+ 			g.P()
+ 		}()
+ 	}
+-
++	
+ 	leadingComments := appendDeprecationSuffix("",
+ 		field.Desc.ParentFile(),
+ 		field.Desc.Options().(*descriptorpb.FieldOptions).GetDeprecated())
+@@ -460,7 +464,7 @@
+ 		Semantic: descriptorpb.GeneratedCodeInfo_Annotation_SET.Enum(),
+ 	})
+ 	fieldtrackNoInterface(g, message.noInterface)
+-
++	
+ 	// Oneof field.
+ 	if oneof := field.Oneof; oneof != nil && !oneof.Desc.IsSynthetic() {
+ 		g.P(leadingComments, "func (x *", message.GoIdent, ") ", setterName, "(v ", goType, ") {")
+@@ -482,7 +486,7 @@
+ 		g.P()
+ 		return
+ 	}
+-
++	
+ 	// Non-oneof field for open type message.
+ 	if !message.isOpaque() {
+ 		g.P(leadingComments, "func (x *", message.GoIdent, ") ", setterName, "(v ", goType, ") {")
+@@ -493,14 +497,14 @@
+ 		if pointer {
+ 			amp = "&"
+ 		}
+-
++		
+ 		v := "v"
+ 		g.P("x.", field.GoName, " = ", amp, v)
+ 		g.P("}")
+ 		g.P()
+ 		return
+ 	}
+-
++	
+ 	// Non-oneof field for opaque type message.
+ 	g.P(leadingComments, "func (x *", message.GoIdent, ") ", setterName, "(v ", goType, ") {")
+ 	structPtr := "x"
+@@ -518,7 +522,7 @@
+ 	if usePresence(message, field) {
+ 		pi := opaqueFieldPresenceIndex(field)
+ 		ai := pi / 32
+-
++		
+ 		if field.Message != nil && field.Desc.IsList() {
+ 			g.P("var sv *", goType)
+ 			g.P(protoimplPackage.Ident("X"), ".AtomicLoadPointer(", protoimplPackage.Ident("Pointer"), "(&", structPtr, ".xxx_hidden_", field.GoName, "), ", protoimplPackage.Ident("Pointer"), "(&sv))")
+@@ -580,13 +584,13 @@
+ // opaqueGenHas generates a Has method for a field.
+ func opaqueGenHas(g *protogen.GeneratedFile, f *fileInfo, message *messageInfo, field *protogen.Field) {
+ 	hasserName, _ := field.MethodName("Has")
+-
++	
+ 	leadingComments := appendDeprecationSuffix("",
+ 		field.Desc.ParentFile(),
+ 		field.Desc.Options().(*descriptorpb.FieldOptions).GetDeprecated())
+ 	g.AnnotateSymbol(message.GoIdent.GoName+"."+hasserName, protogen.Annotation{Location: field.Location})
+ 	fieldtrackNoInterface(g, message.noInterface)
+-
++	
+ 	// Oneof field.
+ 	if oneof := field.Oneof; oneof != nil && !oneof.Desc.IsSynthetic() {
+ 		g.P(leadingComments, "func (x *", message.GoIdent, ") ", hasserName, "() bool {")
+@@ -604,7 +608,7 @@
+ 		g.P()
+ 		return
+ 	}
+-
++	
+ 	// Non-oneof field in open message.
+ 	if !message.isOpaque() {
+ 		g.P(leadingComments, "func (x *", message.GoIdent, ") ", hasserName, "() bool {")
+@@ -616,7 +620,7 @@
+ 		g.P()
+ 		return
+ 	}
+-
++	
+ 	// Non-oneof field in opaque message.
+ 	g.P(leadingComments, "func (x *", message.GoIdent, ") ", hasserName, "() bool {")
+ 	g.P("if x == nil {")
+@@ -635,7 +639,7 @@
+ 		// Has for proto3 message without presence
+ 		g.P("return ", structPtr, ".xxx_hidden_", field.GoName, " != nil")
+ 	}
+-
++	
+ 	g.P("}")
+ 	g.P()
+ }
+@@ -645,7 +649,7 @@
+ 	clearerName, _ := field.MethodName("Clear")
+ 	pi := opaqueFieldPresenceIndex(field)
+ 	ai := pi / 32
+-
++	
+ 	leadingComments := appendDeprecationSuffix("",
+ 		field.Desc.ParentFile(),
+ 		field.Desc.Options().(*descriptorpb.FieldOptions).GetDeprecated())
+@@ -654,7 +658,7 @@
+ 		Semantic: descriptorpb.GeneratedCodeInfo_Annotation_SET.Enum(),
+ 	})
+ 	fieldtrackNoInterface(g, message.noInterface)
+-
++	
+ 	// Oneof field.
+ 	if oneof := field.Oneof; oneof != nil && !oneof.Desc.IsSynthetic() {
+ 		g.P(leadingComments, "func (x *", message.GoIdent, ") ", clearerName, "() {")
+@@ -670,7 +674,7 @@
+ 		g.P()
+ 		return
+ 	}
+-
++	
+ 	// Non-oneof field in open message.
+ 	if !message.isOpaque() {
+ 		g.P(leadingComments, "func (x *", message.GoIdent, ") ", clearerName, "() {")
+@@ -679,7 +683,7 @@
+ 		g.P()
+ 		return
+ 	}
+-
++	
+ 	// Non-oneof field in opaque message.
+ 	g.P(leadingComments, "func (x *", message.GoIdent, ") ", clearerName, "() {")
+ 	structPtr := "x"
+@@ -687,11 +691,11 @@
+ 		// Add access to zero field for tracking
+ 		g.P(structPtr, ".", "XXX_ft_", field.GoName, " = struct{}{}")
+ 	}
+-
++	
+ 	if usePresence(message, field) {
+ 		g.P(protoimplPackage.Ident("X"), ".ClearPresent(&(", structPtr, ".XXX_presence[", ai, "]),", pi, ")")
+ 	}
+-
++	
+ 	// Avoid needing to read the presence value in Get by ensuring that we set the
+ 	// right zero value (unless we have an explicit default, in which case we
+ 	// revert to presence checking in Get). Rationale: Get is called far more
+@@ -848,7 +852,7 @@
+ 	// Builder type.
+ 	bName := g.QualifiedGoIdent(message.GoIdent) + genid.BuilderSuffix_goname
+ 	g.AnnotateSymbol(message.GoIdent.GoName+genid.BuilderSuffix_goname, protogen.Annotation{Location: message.Location})
+-
++	
+ 	leadingComments := appendDeprecationSuffix("",
+ 		message.Desc.ParentFile(),
+ 		message.Desc.Options().(*descriptorpb.MessageOptions).GetDeprecated())
+@@ -857,7 +861,7 @@
+ 	g.P()
+ 	for _, field := range message.Fields {
+ 		oneof := field.Oneof
+-
++		
+ 		goType, pointer := opaqueBuilderFieldGoType(g, f, message, field)
+ 		if pointer {
+ 			goType = "*" + goType
+@@ -890,7 +894,7 @@
+ 	}
+ 	g.P("}")
+ 	g.P()
+-
++	
+ 	opaqueGenBuildMethod(g, f, message, bName)
+ }
+ 
+@@ -900,7 +904,7 @@
+ 	fieldtrackNoInterface(g, message.noInterface)
+ 	g.P("func (b0 ", bName, ") Build() *", message.GoIdent, " {")
+ 	g.P("m0 := &", message.GoIdent, "{}")
+-
++	
+ 	if message.isTracked {
+ 		// Redeclare the builder and message types as local
+ 		// defined types, so that field tracking records the
+@@ -915,7 +919,7 @@
+ 		g.P("b, x := &b0, m0")
+ 	}
+ 	g.P("_, _ = b, x")
+-
++	
+ 	for _, field := range message.Fields {
+ 		oneof := field.Oneof
+ 		if oneof != nil && !oneof.Desc.IsSynthetic() {
+@@ -923,7 +927,7 @@
+ 			if fieldDefaultValue(g, f, message, field) != "nil" {
+ 				qual = "*"
+ 			}
+-
++			
+ 			g.P("if b.", field.BuilderFieldName(), " != nil {")
+ 			oneofName := opaqueOneofFieldName(oneof, message.isOpaque())
+ 			oneofType := opaqueFieldOneofType(field, message.isOpaque())
+@@ -955,7 +959,7 @@
+ 			}
+ 		}
+ 	}
+-
++	
+ 	g.P("return m0")
+ 	g.P("}")
+ 	g.P()
+@@ -966,12 +970,12 @@
+ func opaqueBuilderFieldGoType(g *protogen.GeneratedFile, f *fileInfo, message *messageInfo, field *protogen.Field) (goType string, pointer bool) {
+ 	goType, pointer = opaqueFieldGoType(g, f, message, field)
+ 	kind := field.Desc.Kind()
+-
++	
+ 	// Use []T instead of *[]T for opaque repeated lists.
+ 	if message.isOpaque() && field.Desc.IsList() {
+ 		pointer = false
+ 	}
+-
++	
+ 	// Use *T for optional fields.
+ 	optional := field.Desc.HasPresence()
+ 	if optional &&
+@@ -981,7 +985,7 @@
+ 		field.Desc.Cardinality() != protoreflect.Repeated {
+ 		pointer = true
+ 	}
+-
++	
+ 	return goType, pointer
+ }
+ 
+@@ -995,7 +999,7 @@
+ 			caseTypeName := opaqueOneofCaseTypeName(oneof)
+ 			g.P("type ", caseTypeName, " ", protoreflectPackage.Ident("FieldNumber"))
+ 			g.P("")
+-
++			
+ 			idx := f.allMessagesByPtr[message]
+ 			typesVar := messageTypesVarName(f)
+ 			g.P("func (x ", caseTypeName, ") String() string {")
+@@ -1086,12 +1090,12 @@
+ 		valType, _ := opaqueFieldGoType(g, f, message, field.Message.Fields[1])
+ 		return fmt.Sprintf("map[%v]%v", keyType, valType), false
+ 	}
+-
++	
+ 	// Extension fields always have pointer type, even when defined in a proto3 file.
+ 	if !field.Desc.IsExtension() && !field.Desc.HasPresence() {
+ 		pointer = false
+ 	}
+-
++	
+ 	if message.isOpaque() {
+ 		switch {
+ 		case field.Desc.IsList() && field.Desc.Message() != nil:
+@@ -1107,7 +1111,7 @@
+ 			pointer = false
+ 		}
+ 	}
+-
++	
+ 	return goType, pointer
+ }
+ 
