@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="ALL" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="4ec1475b-3685-450c-a108-3ede41353dbc" name="Changes" comment="转到 win 前提交">
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/annotation_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/annotation_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/internal_gengo/init.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/internal_gengo/init.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/internal_gengo/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/internal_gengo/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/internal_gengo/reflect.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/internal_gengo/reflect.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/internal_gengo/well_known_types.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/internal_gengo/well_known_types.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/annotations/annotations.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/annotations/annotations.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/annotations/annotations.pb.go.meta" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/annotations/annotations.pb.go.meta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/annotations/annotations.proto" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/annotations/annotations.proto" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/comments/comments.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/comments/comments.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/comments/deprecated.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/comments/deprecated.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/extensions/base/base.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/extensions/base/base.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/extensions/ext/ext.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/extensions/ext/ext.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/extensions/extra/extra.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/extensions/extra/extra.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/extensions/proto3/ext3.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/extensions/proto3/ext3.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/fieldnames/fieldnames.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/fieldnames/fieldnames.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/gen_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/gen_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/import_public/a.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/import_public/a.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/import_public/b.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/import_public/b.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/import_public/c.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/import_public/c.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/import_public/sub/a.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/import_public/sub/a.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/import_public/sub/b.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/import_public/sub/b.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/import_public/sub2/a.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/import_public/sub2/a.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/fmt/m.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/fmt/m.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_a_1/m1.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_a_1/m1.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_a_1/m2.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_a_1/m2.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_a_2/m3.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_a_2/m3.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_a_2/m4.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_a_2/m4.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_b_1/m1.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_b_1/m1.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_b_1/m2.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_b_1/m2.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_import_a1m1.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_import_a1m1.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_import_a1m2.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_import_a1m2.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_import_all.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/imports/test_import_all.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/issue780_oneof_conflict/test.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/issue780_oneof_conflict/test.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/nopackage/nopackage.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/nopackage/nopackage.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/proto2/enum.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/proto2/enum.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/proto2/fields.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/proto2/fields.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/proto2/nested_messages.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/proto2/nested_messages.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/proto2/proto2.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/proto2/proto2.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/proto3/enum.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/proto3/enum.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/proto3/fields.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/proto3/fields.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/protoeditions/enum.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/protoeditions/enum.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/protoeditions/fields.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/protoeditions/fields.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/protoeditions/legacy_enum.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/protoeditions/legacy_enum.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/protoeditions/maps_and_delimited.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/protoeditions/maps_and_delimited.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/protoeditions/nested_messages.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/protoeditions/nested_messages.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/retention/options_message.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/retention/options_message.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/retention/retention.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/testdata/retention/retention.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="GOROOT" url="file://$USER_HOME$/sdk/go1.25.2" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/cmd/protoc-gen-go" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 4
+}</component>
+  <component name="ProjectId" id="2jmynszPsj0XwKx5YMURxmwGWwJ" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.GoLinterPluginOnboarding": "true",
+    "RunOnceActivity.GoLinterPluginStorageMigration": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.go.formatter.settings.were.checked": "true",
+    "RunOnceActivity.go.migrated.go.modules.settings": "true",
+    "RunOnceActivity.go.modules.automatic.dependencies.download": "true",
+    "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
+    "git-widget-placeholder": "main",
+    "go.import.settings.migrated": "true",
+    "go.sdk.automatically.set": "true",
+    "last_opened_file_path": "/Users/macmini/Documents/Github/protobuf-go-master",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "go.sdk"
+  }
+}]]></component>
+  <component name="RunManager">
+    <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
+      <module name="protobuf-go-master" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="FILE" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="GoTestRunConfiguration" factoryName="Go Test">
+      <module name="protobuf-go-master" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="DIRECTORY" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <method v="2" />
+    </configuration>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-gosdk-f466f9b0953e-146d08934cbf-org.jetbrains.plugins.go.sharedIndexes.bundled-GO-252.27397.100" />
+        <option value="bundled-js-predefined-d6986cc7102b-3aa1da707db6-JavaScript-GO-252.27397.100" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="4ec1475b-3685-450c-a108-3ede41353dbc" name="Changes" comment="转到 win 前提交" />
+      <created>1752202627793</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1752202627793</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="转到 win 前提交" />
+    <option name="LAST_COMMIT_MESSAGE" value="转到 win 前提交" />
+  </component>
+  <component name="VgoProject">
+    <settings-migrated>true</settings-migrated>
+  </component>
+</project>
