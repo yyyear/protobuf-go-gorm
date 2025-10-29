@@ -1,0 +1,3 @@
+[submodule "cmd"]
+	path = cmd/protoc-gen-go
+	url = http://home.ue0.cn:10880/yyyear/protobuf-cmd.git
