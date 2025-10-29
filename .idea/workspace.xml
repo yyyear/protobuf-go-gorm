@@ -4,7 +4,9 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4ec1475b-3685-450c-a108-3ede41353dbc" name="Changes" comment="转到 win 前提交" />
+    <list default="true" id="4ec1475b-3685-450c-a108-3ede41353dbc" name="Changes" comment="转到 win 前提交">
+      <change afterPath="$PROJECT_DIR$/cmd/protoc-gen-go" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
