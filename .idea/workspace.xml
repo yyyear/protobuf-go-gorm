@@ -5,11 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4ec1475b-3685-450c-a108-3ede41353dbc" name="Changes" comment="转到 win 前提交">
-      <change afterPath="$PROJECT_DIR$/.gitmodules" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/protobuf-cmd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/internal_gengo/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/internal_gengo/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/internal_gengo/opaque.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/internal_gengo/opaque.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/protoc-gen-go/internal_gengo/well_known_types.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/protoc-gen-go/internal_gengo/well_known_types.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -23,7 +24,7 @@
         <entry key="$PROJECT_DIR$/cmd/protoc-gen-go" value="main" />
       </map>
     </option>
-    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/cmd/protoc-gen-go" />
     <option name="ROOT_SYNC" value="DONT_SYNC" />
   </component>
   <component name="ProjectColorInfo">{
